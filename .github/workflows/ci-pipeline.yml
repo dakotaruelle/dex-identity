@@ -1,0 +1,39 @@
+name: Build DexIdentity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-dex-identity:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "3.1.x"
+
+      - name: Install DexIdentity dependencies
+        run: dotnet restore "DexIdentity.csproj"
+
+      - name: Build DexIdentity C# project
+        run: dotnet build "DexIdentity.csproj" --configuration Release --no-restore
+
+      - name: Create DexIdentity release artifacts
+        run: dotnet publish "DexIdentity.csproj" --configuration Release --no-restore --no-build --output dist
+
+      - shell: pwsh
+        name: Zip DexIdentity release artifacts
+        run: Compress-Archive -Path dist/* -DestinationPath dist/dexidentity.zip
+
+      - name: Upload DexIdentity zipped artifacts
+        uses: actions/upload-artifact@v2.2.1
+        with:
+          name: dexidentity.zip
+          path: dist/
+          if-no-files-found: error
+          retention-days: 90
